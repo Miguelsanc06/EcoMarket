@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1039529552247",
+    "project_id": "ecomarket-40df3",
+    "storage_bucket": "ecomarket-40df3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039529552247:android:81fa095bb44bca0b465972",
+        "android_client_info": {
+          "package_name": "com.ecomarket.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAtVi2-wZgOVEx_vwTfaBfPkfZ-WNbySE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
