@@ -2,103 +2,204 @@ package com.ecomarket.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.ecomarket.app.ui.theme.GreenPrimary
-import com.ecomarket.app.ui.theme.GreenSecondary
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+
+/*
+Pantalla perfil vendedor.
+Muestra información real obtenida desde Firebase.
+*/
 
 @Composable
-fun SellerProfileScreen() {
+fun SellerProfileScreen(
+    navController: NavController
+) {
+
+    val auth = FirebaseAuth.getInstance()
+
+    val db = FirebaseFirestore.getInstance()
+
+    val currentUser = auth.currentUser
+
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    var role by remember {
+        mutableStateOf("")
+    }
+
+    // Obtiene datos vendedor
+    LaunchedEffect(Unit) {
+
+        val userId =
+            currentUser?.uid ?: ""
+
+        if (userId.isNotEmpty()) {
+
+            db.collection("users")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { document ->
+
+                    name =
+                        document.getString("name")
+                            ?: ""
+
+                    role =
+                        document.getString("role")
+                            ?: ""
+                }
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F7FA))
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 20.dp)
+            .padding(top = 40.dp)
     ) {
 
-        Spacer(modifier = Modifier.height(20.dp))
-
         Text(
-            text = "Perfil del Vendedor 👨‍🌾",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
+            text = "Perfil vendedor",
+            style = MaterialTheme.typography.headlineMedium,
             color = GreenPrimary
         )
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(GreenSecondary)
-        )
+        // Card perfil
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp)
+        ) {
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
 
-        Text(
-            text = "EcoMarket Seller",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = GreenPrimary,
+                    modifier = Modifier.size(70.dp)
+                )
 
-        Spacer(modifier = Modifier.height(8.dp))
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
 
-        Text(
-            text = "seller@ecomarket.com",
-            color = Color.Gray
-        )
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+
+                Row {
+
+                    Icon(
+                        imageVector = Icons.Default.Email,
+                        contentDescription = null,
+                        tint = GreenPrimary
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
+                    )
+
+                    Text(
+                        text =
+                            currentUser?.email ?: ""
+                    )
+                }
+
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+
+                Text(
+                    text = role
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        SellerInfoCard("Productos publicados", "35")
-        SellerInfoCard("Ventas realizadas", "120")
-        SellerInfoCard("Calificación", "4.9 ⭐")
-    }
-}
-
-@Composable
-fun SellerInfoCard(title: String, value: String) {
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-
-        Column(
-            modifier = Modifier.padding(20.dp)
+        // Información adicional
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp)
         ) {
 
-            Text(
-                text = title,
-                color = Color.Gray
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
+
+                Text(
+                    text = "Información",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+
+                Text(
+                    text =
+                        "Desde este panel el vendedor " +
+                                "puede administrar productos, " +
+                                "visualizar órdenes y gestionar " +
+                                "la información de la tienda."
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Cerrar sesión
+        Button(
+            onClick = {
+
+                auth.signOut()
+
+                navController.navigate("login") {
+
+                    popUpTo(0)
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Red
+            )
+        ) {
+
+            Icon(
+                imageVector = Icons.Default.Logout,
+                contentDescription = null
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall
+            Spacer(
+                modifier = Modifier.width(8.dp)
             )
+
+            Text("Cerrar sesión")
         }
     }
 }

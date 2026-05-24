@@ -1,158 +1,213 @@
 package com.ecomarket.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ecomarket.app.ui.theme.GreenPrimary
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+
+/*
+Panel principal del vendedor.
+Muestra estadísticas y accesos rápidos.
+*/
 
 @Composable
-fun SellerDashboardScreen(navController: NavController) {
+fun SellerDashboardScreen(
+    navController: NavController
+) {
 
-    LazyColumn(
+    val auth = FirebaseAuth.getInstance()
+
+    val db = FirebaseFirestore.getInstance()
+
+    // Cantidad productos
+    var totalProducts by remember {
+        mutableStateOf(0)
+    }
+
+    // Cantidad órdenes
+    var totalOrders by remember {
+        mutableStateOf(0)
+    }
+
+    // Obtiene productos reales
+    LaunchedEffect(Unit) {
+
+        db.collection("products")
+            .addSnapshotListener { result, _ ->
+
+                totalProducts =
+                    result?.documents?.size ?: 0
+            }
+
+        db.collectionGroup("items")
+            .addSnapshotListener { result, _ ->
+
+                totalOrders =
+                    result?.documents?.size ?: 0
+            }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F7FA))
-            .padding(20.dp)
+            .padding(horizontal = 20.dp)
+            .padding(top = 40.dp)
     ) {
 
-        item {
+        Text(
+            text = "Panel vendedor",
+            style = MaterialTheme.typography.headlineMedium,
+            color = GreenPrimary
+        )
 
-            Text(
-                text = "Panel del Vendedor 🛒",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = GreenPrimary
-            )
+        Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
+        // Cerrar sesión
+        Button(
+            onClick = {
 
-            DashboardCard(
-                icon = Icons.Default.ShoppingCart,
-                title = "Pedidos",
-                value = "120",
-                onClick = {
-                    navController.navigate("orders")
+                auth.signOut()
+
+                navController.navigate("login") {
+
+                    popUpTo(0)
                 }
+            },
+            shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Red
+            )
+        ) {
+
+            Icon(
+                imageVector = Icons.Default.Logout,
+                contentDescription = null
             )
 
-            DashboardCard(
-                icon = Icons.Default.Inventory,
-                title = "Productos",
-                value = "35",
-                onClick = {
-                    navController.navigate("productsManagement")
-                }
+            Spacer(
+                modifier = Modifier.width(8.dp)
             )
 
-            DashboardCard(
-                icon = Icons.Default.Person,
-                title = "Perfil vendedor",
-                value = "Ver",
-                onClick = {
-                    navController.navigate("sellerProfile")
-                }
-            )
+            Text("Cerrar sesión")
+        }
 
-            Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = GreenPrimary
-                )
-            ) {
+        // Estadísticas
+        LazyColumn {
 
-                Column(
-                    modifier = Modifier.padding(24.dp)
+            item {
+
+                DashboardCard(
+                    title = "Productos",
+                    value = totalProducts.toString(),
+                    icon = Icons.Default.Inventory
                 ) {
 
-                    Text(
-                        text = "Ventas del mes",
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
+                    navController.navigate(
+                        "productsManagement"
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
 
-                    Text(
-                        text = "$ 4.500.000",
-                        color = Color.White,
-                        fontSize = 30.sp
+                DashboardCard(
+                    title = "Órdenes",
+                    value = totalOrders.toString(),
+                    icon = Icons.Default.ShoppingCart
+                ) {
+
+                    navController.navigate(
+                        "orders"
+                    )
+                }
+
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+
+                DashboardCard(
+                    title = "Perfil vendedor",
+                    value = "Ver perfil",
+                    icon = Icons.Default.Person
+                ) {
+
+                    navController.navigate(
+                        "sellerProfile"
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
 
+/*
+Card reutilizable utilizada en dashboards.
+*/
 @Composable
 fun DashboardCard(
-    icon: ImageVector,
     title: String,
     value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
 
     Card(
-        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+            .clickable {
+                onClick()
+            },
+        shape = RoundedCornerShape(24.dp)
     ) {
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(22.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(24.dp)
         ) {
 
             Icon(
                 imageVector = icon,
-                contentDescription = title,
-                tint = GreenPrimary,
-                modifier = Modifier.size(34.dp)
+                contentDescription = null,
+                tint = GreenPrimary
             )
 
-            Spacer(modifier = Modifier.width(18.dp))
+            Spacer(
+                modifier = Modifier.width(16.dp)
+            )
 
             Column {
 
                 Text(
                     text = title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    style =
+                        MaterialTheme.typography.titleMedium
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
 
                 Text(
                     text = value,
-                    color = Color.Gray,
-                    fontSize = 16.sp
+                    color = GreenPrimary
                 )
             }
         }

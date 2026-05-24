@@ -5,126 +5,130 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.ecomarket.app.models.Order
 import com.ecomarket.app.ui.theme.GreenPrimary
-
-data class Order(
-    val id: String,
-    val customer: String,
-    val total: String,
-    val status: String
-)
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun OrdersScreen() {
 
-    val orders = listOf(
+    val db = FirebaseFirestore.getInstance()
 
-        Order(
-            "001",
-            "Carlos Pérez",
-            "$120.000",
-            "Entregado"
-        ),
+    val auth = FirebaseAuth.getInstance()
 
-        Order(
-            "002",
-            "Laura Gómez",
-            "$85.000",
-            "En camino"
-        ),
+    var orders by remember {
+        mutableStateOf(listOf<Order>())
+    }
 
-        Order(
-            "003",
-            "Andrés Ruiz",
-            "$230.000",
-            "Pendiente"
-        ),
+    // Carga órdenes reales
+    LaunchedEffect(Unit) {
 
-        Order(
-            "004",
-            "Sofía Martínez",
-            "$60.000",
-            "Entregado"
-        )
-    )
+        val userId =
+            auth.currentUser?.uid ?: ""
 
-    LazyColumn(
+        db.collection("orders")
+            .document(userId)
+            .collection("items")
+            .addSnapshotListener { result, _ ->
+
+                if (result != null) {
+
+                    val orderList =
+                        mutableListOf<Order>()
+
+                    for (document in result.documents) {
+
+                        val order = Order(
+                            id = document.id,
+                            name = document.getString("name") ?: "",
+                            price = document.getString("price") ?: "",
+                            imageUrl = document.getString("imageUrl") ?: "",
+                            status = document.getString("status") ?: ""
+                        )
+
+                        orderList.add(order)
+                    }
+
+                    orders = orderList
+                }
+            }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F7FA))
-            .padding(20.dp)
+            .padding(horizontal = 20.dp)
+            .padding(top = 40.dp)
     ) {
 
-        item {
-            Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = "Mis pedidos",
+            style = MaterialTheme.typography.headlineMedium,
+            color = GreenPrimary
+        )
 
-            Text(
-                text = "Mis Pedidos 📦",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = GreenPrimary
-            )
+        Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+        LazyColumn {
 
-        items(orders) { order ->
+            items(orders) { order ->
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                )
-            ) {
-
-                Column(
-                    modifier = Modifier.padding(20.dp)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(24.dp)
                 ) {
 
-                    Text(
-                        text = "Pedido #${order.id}",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    Row(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                        AsyncImage(
+                            model = order.imageUrl,
+                            contentDescription = order.name,
+                            modifier = Modifier.size(100.dp),
+                            contentScale = ContentScale.Crop
+                        )
 
-                    Text(
-                        text = "Cliente: ${order.customer}"
-                    )
+                        Spacer(
+                            modifier = Modifier.width(16.dp)
+                        )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                        Column {
 
-                    Text(
-                        text = "Total: ${order.total}"
-                    )
+                            Text(
+                                text = order.name,
+                                style = MaterialTheme.typography.titleMedium
+                            )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(
+                                modifier = Modifier.height(8.dp)
+                            )
 
-                    Text(
-                        text = "Estado: ${order.status}",
-                        color = when (order.status) {
+                            Text(
+                                text = "$ ${order.price}",
+                                color = GreenPrimary
+                            )
 
-                            "Entregado" -> Color(0xFF4CAF50)
+                            Spacer(
+                                modifier = Modifier.height(8.dp)
+                            )
 
-                            "En camino" -> Color(0xFFFF9800)
-
-                            else -> Color.Red
-                        },
-                        fontWeight = FontWeight.Bold
-                    )
+                            Text(
+                                text = "Estado: ${order.status}"
+                            )
+                        }
+                    }
                 }
             }
         }

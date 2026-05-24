@@ -42,10 +42,13 @@ fun AppNavigation() {
         }
 
         // PRODUCT DETAIL
-        composable("detail/{productId}") { backStackEntry ->
+        composable(
+            route = "detail/{productId}"
+        ) { backStackEntry ->
 
             val productId =
-                backStackEntry.arguments?.getString("productId")?.toIntOrNull() ?: 0
+                backStackEntry.arguments?.getString("productId")
+                    ?: ""
 
             ProductDetailScreen(
                 navController = navController,
@@ -68,6 +71,11 @@ fun AppNavigation() {
             ProfileScreen(navController)
         }
 
+        //SETTINGS
+        composable("settings") {
+            SettingsScreen(navController)
+        }
+
         // SELLER
         composable("sellerDashboard") {
             SellerDashboardScreen(navController)
@@ -78,7 +86,7 @@ fun AppNavigation() {
         }
 
         composable("sellerProfile") {
-            SellerProfileScreen()
+            SellerProfileScreen(navController)
         }
 
         // ADMIN
